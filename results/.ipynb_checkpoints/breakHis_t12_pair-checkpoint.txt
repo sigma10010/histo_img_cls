@@ -1,0 +1,60 @@
+ckpt_baseline_pair_c_breakHis3_daug_2l1**1.5beta_m15_00001.t12:
+pateient score:0.8955738859016208
+accuracy:0.8971672487388436
+f1-score:[0.833856, 0.925541]
+ckpt_baseline_pair_c_breakHis5_daug_2l1**1.5beta_m15_00013.t12:
+pateient score:0.9269344019653136
+accuracy:0.9098280895231917
+f1-score:[0.859738, 0.933556]
+ckpt_baseline_pair_c_breakHis2_daug_2l1**1.5beta_m15_00005.t12:
+pateient score:0.8766552248442518
+accuracy:0.8622555139409072
+f1-score:[0.762383, 0.903018]
+ckpt_baseline_pair_c_breakHis4_daug_2l1**1.5beta_m15_00006.t12:
+pateient score:0.8304805547463533
+accuracy:0.8413639733135656
+f1-score:[0.763012, 0.880780]
+ckpt_baseline_pair_c_breakHis1_daug_2l1**1.5beta_m05_00024.t12:
+pateient score:0.8503407093763539
+accuracy:0.8292011019283747
+f1-score:[0.739222, 0.873016]
+ckpt_baseline_pair_c_breakHis4_daug_2l1**1.5beta_m05_00011.t12:
+pateient score:0.8294491407421564
+accuracy:0.8395107487027428
+f1-score:[0.768820, 0.877093]
+ckpt_baseline_pair_c_breakHis3_daug_2l1**1.5beta_m05_00014.t12:
+pateient score:0.9199929874911155
+accuracy:0.923942568878541
+f1-score:[0.882915, 0.943678]
+ckpt_baseline_pair_c_breakHis1_daug_2l1**1.5beta_m15_00011.t12:
+pateient score:0.8583284397117742
+accuracy:0.8574380165289256
+f1-score:[0.798246, 0.889776]
+ckpt_baseline_pair_c_breakHis4_daug_2l1**1.5beta_m20_00015.t12:
+pateient score:0.8193045911296573
+accuracy:0.8317272053372868
+f1-score:[0.757737, 0.871096]
+ckpt_baseline_pair_c_breakHis2_daug_2l1**1.5beta_m05_00015.t12:
+pateient score:0.8637453260509586
+accuracy:0.8472742405326675
+f1-score:[0.749830, 0.890087]
+ckpt_baseline_pair_c_breakHis3_daug_2l1**1.5beta_m20_00005.t12:
+pateient score:0.888105666891238
+accuracy:0.8901823826154444
+f1-score:[0.834018, 0.917947]
+ckpt_baseline_pair_c_breakHis1_daug_2l1**1.5beta_m20_00010.t12:
+pateient score:0.8688829231588533
+accuracy:0.8667355371900827
+f1-score:[0.814210, 0.896107]
+ckpt_baseline_pair_c_breakHis5_daug_2l1**1.5beta_m20_00021.t12:
+pateient score:0.92721841123631
+accuracy:0.9101524489133961
+f1-score:[0.862939, 0.933172]
+ckpt_baseline_pair_c_breakHis2_daug_2l1**1.5beta_m20_00018.t12:
+pateient score:0.8749261693645783
+accuracy:0.8572617561381606
+f1-score:[0.761971, 0.898068]
+ckpt_baseline_pair_c_breakHis5_daug_2l1**1.5beta_m05_00013.t12:
+pateient score:0.9210359751349338
+accuracy:0.9049626986701265
+f1-score:[0.851646, 0.930088]

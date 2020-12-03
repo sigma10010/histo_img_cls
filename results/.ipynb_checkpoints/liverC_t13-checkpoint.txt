@@ -1,0 +1,12 @@
+ckpt_pnn2_triplet_c_liverC_100_focal0_00009.t13:
+accuracy:0.7711455422910846
+f1-score:[0.758768, 0.782315]
+ckpt_resnet_single_c_liverC_100_focal0_00012.t13:
+accuracy:0.8641097282194564
+f1-score:[0.862574, 0.865612]
+ckpt_pnn2_triplet_c_liverC_100_focal0_00014.t13:
+accuracy:0.587249174498349
+f1-score:[0.664187, 0.464580]
+ckpt_resnet_triplet_c_liverC_100_focal0_00021.t13:
+accuracy:0.8521717043434087
+f1-score:[0.850616, 0.853695]

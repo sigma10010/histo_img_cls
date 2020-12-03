@@ -1,0 +1,20 @@
+ckpt_baseline_triplet_c_breakHis1_daug_2l1**1.2beta_00021.t13:
+pateient score:0.8422488383158394
+accuracy:0.8316115702479339
+f1-score:[0.758280, 0.870806]
+ckpt_baseline_triplet_c_breakHis5_daug_2l1**1.2beta_00013.t13:
+pateient score:0.9122323376997593
+accuracy:0.8975024326954265
+f1-score:[0.846453, 0.923077]
+ckpt_baseline_triplet_c_breakHis3_daug_2l1**1.2beta_00015.t13:
+pateient score:0.9219210415038378
+accuracy:0.9204501358168413
+f1-score:[0.873379, 0.942008]
+ckpt_baseline_triplet_c_breakHis2_daug_2l1**1.2beta_00002.t13:
+pateient score:0.8425723041698622
+accuracy:0.8248023304203079
+f1-score:[0.605436, 0.887403]
+ckpt_baseline_triplet_c_breakHis4_daug_2l1**1.2beta_00031.t13:
+pateient score:0.8334902680097998
+accuracy:0.8350630096367679
+f1-score:[0.743811, 0.878382]

@@ -1,0 +1,18 @@
+ckpt_pnn2_liverC_00012.t7:
+accuracy:0.7362064516129032
+f1-score:[0.688866, 0.771043]
+ckpt_pnn2_Triplet_C_liverC_00011.t7:
+accuracy:0.9017290322580646
+f1-score:[0.903006, 0.900418]
+ckpt_pnn2_Siamese_C_liverC_00004.t7:
+accuracy:0.902916129032258
+f1-score:[0.902077, 0.903741]
+ckpt_resnet_single_c_liverC_500_focal0_00010.t13:
+accuracy:0.9127225806451613
+f1-score:[0.913561, 0.911867]
+ckpt_resnet_triplet_c_liverC_500_focal0_00007.t13:
+accuracy:0.9216
+f1-score:[0.923201, 0.919930]
+ckpt_resnet_pair_c_liverC_500_focal0_00010.t13:
+accuracy:0.896774193548387
+f1-score:[0.902818, 0.889928]
