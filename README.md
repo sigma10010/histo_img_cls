@@ -1,2 +1,1 @@
-# sim_histo_img_cls
-Learning Similarity-based Embeddings for Histopathological Image Classification
+Magnification-independent Histopathological Image Classification with Similarity-based Multi-scale Embeddings
