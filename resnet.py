@@ -100,7 +100,7 @@ class ResNet(nn.Module):
         self.layer2 = self._make_layer(block, 16, num_blocks[1], stride=2)
         self.layer3 = self._make_layer(block, 32, num_blocks[2], stride=2)
         self.layer4 = self._make_layer(block, 64, num_blocks[3], stride=2)
-        self.linear1 = nn.Linear(64*3*2*block.expansion, 256)
+        self.linear1 = nn.Linear(64*4*3*block.expansion, 256)
         self.linear2 = nn.Linear(256, num_classes+10)
         self.dropout = nn.Dropout2d(p=0.5)
 
@@ -148,6 +148,9 @@ def ResNet18():
     """
     224*224
     3*2
+    
+    299*299
+    4*3
     """
     return ResNet(BasicBlock, [2,2,2,2])
 
@@ -166,7 +169,7 @@ def ResNet152():
 
 def test():
     net = ResNet18()
-    y = net(torch.randn(1,3,224,224))
+    y = net(torch.randn(1,3,299,299))
     print(y.size())
 
 # test()

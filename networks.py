@@ -1,5 +1,6 @@
 import torch.nn as nn
 import torch.nn.functional as F
+import torch
 
 class BreakHisEmbeddingNet(nn.Module):
     '''
@@ -51,7 +52,9 @@ class BreakHisEmbeddingNet(nn.Module):
 class EmbeddingNet(nn.Module):
     '''
     for liveC
-    input size 3*224*224
+    input size 3*224*224 -->64*10*10
+    
+    3*299*299 -->64*14*14
     '''
     def __init__(self, n_classes):
         super(EmbeddingNet, self).__init__()
@@ -66,7 +69,7 @@ class EmbeddingNet(nn.Module):
                                      nn.MaxPool2d(2, stride=2)
                                     )
 
-        self.fc = nn.Sequential(nn.Linear(64 * 10 * 10, 256),
+        self.fc = nn.Sequential(nn.Linear(64 * 14 * 14, 256),
                                 nn.PReLU(),
                                 nn.Linear(256, 256),
                                 nn.PReLU(),
@@ -259,3 +262,10 @@ class TripletClassificationNet(nn.Module):
         out=self.embedding_net(x)
         out=self.nonlinear(out)
         return F.softmax(self.fc(out), dim=-1)
+    
+def test():
+    net = EmbeddingNet(2)
+    y = net(torch.randn(1,3,299,299))
+    print(y.size())
+
+# test()

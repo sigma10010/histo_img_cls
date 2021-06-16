@@ -1,6 +1,6 @@
 from torchvision import transforms
 # from datasets import BaseHistoFromSampler, SlideDataSampler, SlideSampler
-from datasets import BreakHis, BreakHisPIL
+from datasets import BreakHisPIL
 
 # ========================liver Dataset===================================================================================
 # ptrain='/mnt/DATA_OTHER/liverC/patches/train/'

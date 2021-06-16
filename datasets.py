@@ -7,6 +7,7 @@ from torch.utils.data import Dataset
 from torch.utils.data.sampler import BatchSampler
 
 from xml.etree import ElementTree
+import csv
 
 import os
 import torch
@@ -182,6 +183,91 @@ class BaseHistoNew(Dataset):
     
     def statistic(self):
         return {self.label_name_list[key] : len(self.label_to_indices[key]) for key in self.label_to_indices.keys()}
+    
+class RetinaPIL(Dataset):
+    """
+    General Histo dataset:
+    input: root path of images, list to indicate indexes of slide
+    output: a PIL Image and label
+    """
+    
+    FILE = '/mnt/DATA_OTHER/retina/RFMiD_Training_Labels.csv'
+    
+
+    def __init__(self, root_dir, size=700, data_aug = True, transform=None):
+        """
+        Args:
+            root_dir (string): Directory with all the images, root_dir/slides/images.
+            slides (list): list of indexing slide
+            transform (callable, optional): Optional transform to be applied on a sample.
+        """
+        self.root_dir = root_dir
+        self.size = size
+        self.data_aug = data_aug
+        self.transform = transform
+        
+        self.imglist = self.get_image_label_list()
+        self.labels = np.array([e[1] for e in self.imglist])
+        
+        self.label_name_list =list(sorted(set(map(str, list(self.labels))))) # sorted to keep consistent
+        self.labels_set=set(range(len(self.label_name_list)))
+        
+        self.label_to_indices = {label: np.where(self.labels == label)[0]
+                                     for label in self.labels_set}
+
+    def __len__(self):
+        return len(self.walk_root_dir()[0])
+
+    def __getitem__(self, idx):
+        img_name = self.imglist[idx][0]
+        img = Image.open(img_name)
+        img = img.resize((700, 460))
+        if self.data_aug:
+            hf = RandomHorizontalFlip()
+            vf = RandomVerticalFlip()
+            cj = ColorJitter(0.1,0.1,0.1,0.1)
+            t = Compose([hf, vf, cj])
+            img = t(img)
+        img = np.array(img)
+        img = img.astype('float32')
+        if img.ndim==3:
+            if img.shape[2]==4:
+                img=color.rgba2rgb(img)
+        if img.shape[0] > self.size:
+            img=img[(img.shape[0]-self.size)//2:(img.shape[0]-self.size)//2+self.size, (img.shape[1]-self.size)//2:(img.shape[1]-self.size)//2+self.size,:]
+        label = self.imglist[idx][1] 
+#         slide = self.imglist[idx][2]
+        
+        if self.transform is not None:
+            img = self.transform(img)
+
+        return img, label, img_name  # numpy image or torch depends on transform
+    
+    def get_ground_truth(self, fid):
+        interestingrow = []
+        with open(RetinaPIL.FILE, newline='') as f:
+            reader = csv.reader(f)
+            interestingrow = [row for idx, row in enumerate(reader) if idx == fid]
+        return list(map(int, interestingrow[0][1:])) 
+    
+    def walk_root_dir(self):
+        names=[]
+        wholePathes=[]
+        for dirpath, subdirs, files in os.walk(self.root_dir):
+            for x in files:
+                if x.endswith(('.png','.jpeg')):
+                    names.append(x)
+                    wholePathes.append(os.path.join(dirpath, x))
+
+        return names, wholePathes
+    
+    def get_image_label_list(self):  
+        f_name, f_path = self.walk_root_dir()
+        image_label_list =  [[f_path[i], self.get_ground_truth(int(f_name[i].split('.')[0]))[0], self.get_ground_truth(int(f_name[i].split('.')[0]))[1:]] for i,f in enumerate(f_name)]
+        return image_label_list
+    
+    def statistic(self):
+        return {self.label_name_list[key] : len(self.label_to_indices[key]) for key in self.label_to_indices.keys()}
 
 class BreakHisPIL(Dataset):
     """
@@ -262,15 +348,15 @@ class BreakHisPIL(Dataset):
     
     def statistic(self):
         return {self.label_name_list[key] : len(self.label_to_indices[key]) for key in self.label_to_indices.keys()}
-
-class BreakHis(Dataset):
+    
+class BladderPIL(Dataset):
     """
     General Histo dataset:
     input: root path of images, list to indicate indexes of slide
     output: a PIL Image and label
     """
 
-    def __init__(self, root_dir, size=700, transform=None):
+    def __init__(self, root_dir, size=299, data_aug = True, transform=None):
         """
         Args:
             root_dir (string): Directory with all the images, root_dir/slides/images.
@@ -279,9 +365,15 @@ class BreakHis(Dataset):
         """
         self.root_dir = root_dir
         self.size = size
+        self.data_aug = data_aug
         self.transform = transform
+        
         self.label_name_list =list(sorted(set(self.walk_root_dir()[2]))) # sorted to keep consistent
         self.labels_set=set(range(len(self.label_name_list)))
+        
+#         self.slide_name_list =list(sorted(set(self.walk_root_dir()[3]))) # sorted to keep consistent
+#         self.slides_set=set(range(len(self.slide_name_list)))
+        
         self.imglist = self.get_image_label_list()
         self.labels = np.array([e[1] for e in self.imglist])
         self.label_to_indices = {label: np.where(self.labels == label)[0]
@@ -292,8 +384,14 @@ class BreakHis(Dataset):
 
     def __getitem__(self, idx):
         img_name = self.imglist[idx][0]
-        img=io.imread(img_name)
-        img = resize(img, (460, 700))
+        img = Image.open(img_name)
+#         img = img.resize((700, 460))
+        if self.data_aug:
+            hf = RandomHorizontalFlip()
+            vf = RandomVerticalFlip()
+            cj = ColorJitter(0.1,0.1,0.1,0.1)
+            t = Compose([hf, vf, cj])
+            img = t(img)
         img = np.array(img)
         img = img.astype('float32')
         if img.ndim==3:
@@ -302,22 +400,25 @@ class BreakHis(Dataset):
         if img.shape[0] > self.size:
             img=img[(img.shape[0]-self.size)//2:(img.shape[0]-self.size)//2+self.size, (img.shape[1]-self.size)//2:(img.shape[1]-self.size)//2+self.size,:]
         label = self.imglist[idx][1] 
+#         slide = self.imglist[idx][2]
         
         if self.transform is not None:
             img = self.transform(img)
 
-        return img, label # numpy image or torch depends on transform
+        return img, label, img_name  # numpy image or torch depends on transform
     
     def walk_root_dir(self):
         names=[]
         wholePathes=[]
         labels=[]
+        slides=[]
         for dirpath, subdirs, files in os.walk(self.root_dir):
             for x in files:
-                if x.endswith(('.png','.jpg')):
+                if x.endswith(('.png','.jpeg')):
                     names.append(x)
                     wholePathes.append(os.path.join(dirpath, x))
-                    labels.append(x.split('_')[1]) # index 1 for labels
+                    labels.append(x.split('_')[0]) # index 0 for labels
+#                     slides.append(x.split('_')[2].split('-')[2])
         return names, wholePathes, labels
     
     def get_image_label_list(self):  
@@ -327,6 +428,7 @@ class BreakHis(Dataset):
     
     def statistic(self):
         return {self.label_name_list[key] : len(self.label_to_indices[key]) for key in self.label_to_indices.keys()}
+
 
 class BaseHistoFromSampler(Dataset):
     """
@@ -610,115 +712,6 @@ class SiameseClassificationHisto(Dataset):
 
     def __len__(self):
         return len(self.histoDataset)
-    
-class SiameseClsBreakHis(Dataset):
-    """
-    Train: For each sample creates randomly a positive or a negative pair
-    Test: Creates fixed pairs for testing
-    """
-
-    def __init__(self, baseHisto, train, size = 224):
-        self.histoDataset=baseHisto
-        self.train = train
-        self.size = size
-        self.transform = self.histoDataset.transform
-        if self.train:
-            self.train_labels = np.array([e[1] for e in self.histoDataset.imglist])
-            self.train_data = np.array([e[0] for e in self.histoDataset.imglist])
-            self.labels_set = self.histoDataset.labels_set
-            self.label_to_indices = {label: np.where(self.train_labels == label)[0]
-                                     for label in self.labels_set}
-        else:
-            # generate fixed pairs for testing
-            self.test_labels = np.array([e[1] for e in self.histoDataset.imglist])
-            self.test_data = np.array([e[0] for e in self.histoDataset.imglist])
-            self.labels_set = self.histoDataset.labels_set
-            self.label_to_indices = {label: np.where(self.test_labels == label)[0]
-                                     for label in self.labels_set}
-
-            random_state = np.random.RandomState(29)
-
-            positive_pairs = [[i,
-                               random_state.choice(self.label_to_indices[self.test_labels[i].item()]),
-                               1]
-                              for i in range(0, len(self.test_data), 2)]
-
-            negative_pairs = [[i,
-                               random_state.choice(self.label_to_indices[
-                                                       np.random.choice(
-                                                           list(self.labels_set - set([self.test_labels[i].item()]))
-                                                       )
-                                                   ]),
-                               0]
-                              for i in range(1, len(self.test_data), 2)]
-            self.test_pairs = positive_pairs + negative_pairs
-            
-
-    def __getitem__(self, index):
-        if self.train:
-            target = np.random.randint(0, 2)
-            img1_name, label1 = self.train_data[index], self.train_labels[index].item()
-            img1 = io.imread(img1_name)
-            img1 = resize(img1, (460, 700))
-            img1 = np.array(img1)
-            img1 = img1.astype('float32')
-            if img1.ndim==3:
-                if img1.shape[2]==4:
-                    img1=color.rgba2rgb(img1).astype(np.float32)
-            if img1.shape[0] > self.size:
-                img1=img1[(img1.shape[0]-self.size)//2:(img1.shape[0]-self.size)//2+self.size, (img1.shape[1]-self.size)//2:(img1.shape[1]-self.size)//2+self.size,:]
-            if target == 1:
-                siamese_index = index
-                while siamese_index == index:
-                    siamese_index = np.random.choice(self.label_to_indices[label1])
-            else:
-                siamese_label = np.random.choice(list(self.labels_set - set([label1])))
-                siamese_index = np.random.choice(self.label_to_indices[siamese_label])
-            img2_name, label2 = self.train_data[siamese_index], self.train_labels[siamese_index].item()
-            img2=io.imread(img2_name)
-            img2 = resize(img2, (460, 700))
-            img2 = np.array(img2)
-            img2 = img2.astype('float32')
-            
-            if img2.ndim==3:
-                if img2.shape[2]==4:
-                    img2=color.rgba2rgb(img2).astype(np.float32)
-            if img2.shape[0] > self.size:
-                img2=img2[(img2.shape[0]-self.size)//2:(img2.shape[0]-self.size)//2+self.size, (img2.shape[1]-self.size)//2:(img2.shape[1]-self.size)//2+self.size,:]
-        else:
-            img1_name, label1 = self.test_data[self.test_pairs[index][0]], self.test_labels[self.test_pairs[index][0]]
-            
-            img1=io.imread(img1_name)
-            img1 = resize(img1, (460, 700))
-            img1 = np.array(img1)
-            img1= img1.astype('float32')
-            if img1.ndim==3:
-                if img1.shape[2]==4:
-                    img1=color.rgba2rgb(img1).astype(np.float32)
-            if img1.shape[0] > self.size:
-                img1=img1[(img1.shape[0]-self.size)//2:(img1.shape[0]-self.size)//2+self.size, (img1.shape[1]-self.size)//2:(img1.shape[1]-self.size)//2+self.size,:]
-            img2_name, label2 = self.test_data[self.test_pairs[index][1]], self.test_labels[self.test_pairs[index][1]]
-            
-            img2=io.imread(img2_name)
-            img2 = resize(img2, (460, 700))
-            img2 = np.array(img2)
-            img2 = img2.astype('float32')
-            if img2.ndim==3:
-                if img2.shape[2]==4:
-                    img2=color.rgba2rgb(img2).astype(np.float32)
-            if img2.shape[0] > self.size:
-                img2=img2[(img2.shape[0]-self.size)//2:(img2.shape[0]-self.size)//2+self.size, (img2.shape[1]-self.size)//2:(img2.shape[1]-self.size)//2+self.size,:]
-            target = self.test_pairs[index][2]
-            
-        if self.transform is not None:
-            img1 = self.transform(img1)
-            img2 = self.transform(img2)
-        return (img1, img2), (target, label1)
-
-    def __len__(self):
-        return len(self.histoDataset)
-    
-
     
 class TripletHisto(Dataset):
     """
@@ -1058,126 +1051,6 @@ class TripletClassificationHisto(Dataset):
     def __len__(self):
         return len(self.histoDataset)
     
-class TripletClsBreakHis(Dataset):
-    """
-    without data aug
-    Train: For each sample (anchor) randomly chooses a positive and negative samples
-    Test: Creates fixed triplets for testing
-    """
-
-    def __init__(self, baseHisto, train):
-        self.histoDataset = baseHisto
-        self.train = train
-#         self.size = size
-        self.transform = self.histoDataset.transform
-
-        if self.train:
-            self.train_labels = np.array([e[1] for e in self.histoDataset.imglist])
-            self.train_data = np.array([e[0] for e in self.histoDataset.imglist])
-            self.labels_set = self.histoDataset.labels_set
-            self.label_to_indices = {label: np.where(self.train_labels == label)[0]
-                                     for label in self.labels_set}
-
-        else:
-            self.test_labels = np.array([e[1] for e in self.histoDataset.imglist])
-            self.test_data = np.array([e[0] for e in self.histoDataset.imglist])
-            # generate fixed triplets for testing
-            self.labels_set = self.histoDataset.labels_set
-            self.label_to_indices = {label: np.where(self.test_labels == label)[0]
-                                     for label in self.labels_set}
-
-            random_state = np.random.RandomState(29)
-
-            triplets = [[i,
-                         random_state.choice(self.label_to_indices[self.test_labels[i].item()]),
-                         random_state.choice(self.label_to_indices[
-                                                 np.random.choice(
-                                                     list(self.labels_set - set([self.test_labels[i].item()]))
-                                                 )
-                                             ])
-                         ]
-                        for i in range(len(self.test_data))]
-            self.test_triplets = triplets
-
-    def __getitem__(self, index):
-        if self.train:
-            img1_name, label1 = self.train_data[index], self.train_labels[index].item()
-            
-            img1 = io.imread(img1_name)
-            img1 = resize(img1, (460, 700))
-            img1 = np.array(img1)
-            img1 = img1.astype('float32')
-            
-            if img1.ndim==3:
-                if img1.shape[2]==4:
-                    img1=color.rgba2rgb(img1).astype(np.float32)
-            
-            positive_index = index
-            while positive_index == index:
-                positive_index = np.random.choice(self.label_to_indices[label1])
-            negative_label = np.random.choice(list(self.labels_set - set([label1])))
-            negative_index = np.random.choice(self.label_to_indices[negative_label])
-            img2_name = self.train_data[positive_index]
-            
-            img2 = io.imread(img2_name)
-            img2 = resize(img2, (460, 700))
-            img2 = np.array(img2)
-            img2 = img2.astype('float32')
-            if img2.ndim==3:
-                if img2.shape[2]==4:
-                    img2=color.rgba2rgb(img2).astype(np.float32)
-            
-            img3_name = self.train_data[negative_index]
-            
-            img3=io.imread(img3_name)
-            img3 = resize(img3, (460, 700))
-            img3 = np.array(img3)
-            img3 = img3.astype('float32')
-            if img3.ndim==3:
-                if img3.shape[2]==4:
-                    img3=color.rgba2rgb(img3).astype(np.float32)
-            
-        else:
-            img1_name = self.test_data[self.test_triplets[index][0]]
-            label1 = self.test_labels[self.test_triplets[index][0]].item()
-            
-            img1 = io.imread(img1_name)
-            img1 = resize(img1, (460, 700))
-            img1 = np.array(img1)
-            img1 = img1.astype('float32')
-            if img1.ndim==3:
-                if img1.shape[2]==4:
-                    img1=color.rgba2rgb(img1).astype(np.float32)
-            
-            img2_name = self.test_data[self.test_triplets[index][1]]
-            
-            img2 = io.imread(img2_name)
-            img2 = resize(img2, (460, 700))
-            img2 = np.array(img2)
-            img2 = img2.astype('float32')
-            if img2.ndim==3:
-                if img2.shape[2]==4:
-                    img2=color.rgba2rgb(img2).astype(np.float32)
-            
-            img3_name = self.test_data[self.test_triplets[index][2]]
-            
-            img3 = io.imread(img3_name)
-            img3 = resize(img3, (460, 700))
-            img3 = np.array(img3)
-            img3 = img3.astype('float32')
-            if img3.ndim==3:
-                if img3.shape[2]==4:
-                    img3=color.rgba2rgb(img3).astype(np.float32)
-
-        if self.transform is not None:
-            img1 = self.transform(img1)
-            img2 = self.transform(img2)
-            img3 = self.transform(img3)
-        return (img1, img2, img3), label1
-
-    def __len__(self):
-        return len(self.histoDataset)
-    
 class SiameseClsBreakHisPIL(Dataset):
     """
     Train: For each sample creates randomly a positive or a negative pair
@@ -1273,6 +1146,117 @@ class SiameseClsBreakHisPIL(Dataset):
             img2_name, label2 = self.test_data[self.test_pairs[index][1]], self.test_labels[self.test_pairs[index][1]]
             img2 = Image.open(img2_name)
             img2 = img2.resize((700, 460))
+            img2 = np.array(img2)
+            img2 = img2.astype('float32')
+            if img2.ndim==3:
+                if img2.shape[2]==4:
+                    img2=color.rgba2rgb(img2).astype(np.float32)
+            
+            target = self.test_pairs[index][2]
+            
+        if self.transform is not None:
+            img1 = self.transform(img1)
+            img2 = self.transform(img2)
+        return (img1, img2), (target, label1)
+
+    def __len__(self):
+        return len(self.histoDataset)
+    
+class SiameseClsPIL(Dataset):
+    """
+    Train: For each sample creates randomly a positive or a negative pair
+    Test: Creates fixed pairs for testing
+    """
+
+    def __init__(self, baseHisto, train):
+        self.histoDataset=baseHisto
+        self.train = train
+        self.transform = self.histoDataset.transform
+        if self.train:
+            self.train_labels = np.array([e[1] for e in self.histoDataset.imglist])
+            self.train_data = np.array([e[0] for e in self.histoDataset.imglist])
+            self.labels_set = self.histoDataset.labels_set
+            self.label_to_indices = {label: np.where(self.train_labels == label)[0]
+                                     for label in self.labels_set}
+        else:
+            # generate fixed pairs for testing
+            self.test_labels = np.array([e[1] for e in self.histoDataset.imglist])
+            self.test_data = np.array([e[0] for e in self.histoDataset.imglist])
+            self.labels_set = self.histoDataset.labels_set
+            self.label_to_indices = {label: np.where(self.test_labels == label)[0]
+                                     for label in self.labels_set}
+
+            random_state = np.random.RandomState(29)
+
+            positive_pairs = [[i,
+                               random_state.choice(self.label_to_indices[self.test_labels[i].item()]),
+                               1]
+                              for i in range(0, len(self.test_data), 2)]
+
+            negative_pairs = [[i,
+                               random_state.choice(self.label_to_indices[
+                                                       np.random.choice(
+                                                           list(self.labels_set - set([self.test_labels[i].item()]))
+                                                       )
+                                                   ]),
+                               0]
+                              for i in range(1, len(self.test_data), 2)]
+            self.test_pairs = positive_pairs + negative_pairs
+            
+
+    def __getitem__(self, index):
+        if self.train:
+            target = np.random.randint(0, 2)
+            img1_name, label1 = self.train_data[index], self.train_labels[index].item()
+            img1 = Image.open(img1_name)
+#             img1 = img1.resize((700, 460))
+#             if self.data_aug:
+            hf = RandomHorizontalFlip()
+            vf = RandomVerticalFlip()
+            cj = ColorJitter(0.1,0.1,0.1,0.1)
+            t = Compose([hf, vf, cj])
+            img1 = t(img1)
+            
+            img1 = np.array(img1)
+            img1 = img1.astype('float32')
+            
+            if img1.ndim==3:
+                if img1.shape[2]==4:
+                    img1=color.rgba2rgb(img1).astype(np.float32)
+            
+            if target == 1:
+                siamese_index = index
+                while siamese_index == index:
+                    siamese_index = np.random.choice(self.label_to_indices[label1])
+            else:
+                siamese_label = np.random.choice(list(self.labels_set - set([label1])))
+                siamese_index = np.random.choice(self.label_to_indices[siamese_label])
+            img2_name, label2 = self.train_data[siamese_index], self.train_labels[siamese_index].item()
+            img2 = Image.open(img2_name)
+#             img2 = img2.resize((700, 460))
+#             if self.data_aug:
+            img2 = t(img2)
+            
+            img2 = np.array(img2)
+            img2 = img2.astype('float32')
+            if img2.ndim==3:
+                if img2.shape[2]==4:
+                    img2=color.rgba2rgb(img2).astype(np.float32)
+            
+        else:
+            img1_name, label1 = self.test_data[self.test_pairs[index][0]], self.test_labels[self.test_pairs[index][0]]
+            img1 = Image.open(img1_name)
+#             img1 = img1.resize((700, 460))
+            img1 = np.array(img1)
+            img1 = img1.astype('float32')
+            
+            if img1.ndim==3:
+                if img1.shape[2]==4:
+                    img1=color.rgba2rgb(img1).astype(np.float32)
+           
+            img2_name, label2 = self.test_data[self.test_pairs[index][1]], self.test_labels[self.test_pairs[index][1]]
+            img2 = Image.open(img2_name)
+#             img2 = img2.resize((700, 460))
             img2 = np.array(img2)
             img2 = img2.astype('float32')
             if img2.ndim==3:
@@ -1407,6 +1391,141 @@ class TripletClsBreakHisPIL(Dataset):
             
             img3 = Image.open(img3_name)
             img3 = img3.resize((700, 460))
+            
+            
+            img3 = np.array(img3)
+            img3 = img3.astype('float32')
+            if img3.ndim==3:
+                if img3.shape[2]==4:
+                    img3=color.rgba2rgb(img3).astype(np.float32)
+
+        if self.transform is not None:
+            img1 = self.transform(img1)
+            img2 = self.transform(img2)
+            img3 = self.transform(img3)
+        return (img1, img2, img3), label1
+
+    def __len__(self):
+        return len(self.histoDataset)
+    
+class TripletClsPIL(Dataset):
+    """
+    Train: For each sample (anchor) randomly chooses a positive and negative samples
+    Test: Creates fixed triplets for testing
+    """
+
+    def __init__(self, baseHisto, train):
+        self.histoDataset = baseHisto
+        self.train = train
+        self.transform = self.histoDataset.transform
+
+        if self.train:
+            self.train_labels = np.array([e[1] for e in self.histoDataset.imglist])
+            self.train_data = np.array([e[0] for e in self.histoDataset.imglist])
+            self.labels_set = self.histoDataset.labels_set
+            self.label_to_indices = {label: np.where(self.train_labels == label)[0]
+                                     for label in self.labels_set}
+
+        else:
+            self.test_labels = np.array([e[1] for e in self.histoDataset.imglist])
+            self.test_data = np.array([e[0] for e in self.histoDataset.imglist])
+            # generate fixed triplets for testing
+            self.labels_set = self.histoDataset.labels_set
+            self.label_to_indices = {label: np.where(self.test_labels == label)[0]
+                                     for label in self.labels_set}
+
+            random_state = np.random.RandomState(29)
+
+            triplets = [[i,
+                         random_state.choice(self.label_to_indices[self.test_labels[i].item()]),
+                         random_state.choice(self.label_to_indices[
+                                                 np.random.choice(
+                                                     list(self.labels_set - set([self.test_labels[i].item()]))
+                                                 )
+                                             ])
+                         ]
+                        for i in range(len(self.test_data))]
+            self.test_triplets = triplets
+
+    def __getitem__(self, index):
+        if self.train:
+            img1_name, label1 = self.train_data[index], self.train_labels[index].item()
+            
+            img1 = Image.open(img1_name)
+#             img1 = img1.resize((700, 460))
+#             if self.data_aug:
+            hf = RandomHorizontalFlip()
+            vf = RandomVerticalFlip()
+            cj = ColorJitter(0.1,0.1,0.1,0.1)
+            t = Compose([hf, vf, cj])
+            img1 = t(img1)
+            
+            img1 = np.array(img1)
+            img1 = img1.astype('float32')
+            
+            if img1.ndim==3:
+                if img1.shape[2]==4:
+                    img1=color.rgba2rgb(img1).astype(np.float32)
+            
+            positive_index = index
+            while positive_index == index:
+                positive_index = np.random.choice(self.label_to_indices[label1])
+            negative_label = np.random.choice(list(self.labels_set - set([label1])))
+            negative_index = np.random.choice(self.label_to_indices[negative_label])
+            img2_name = self.train_data[positive_index]
+            
+            img2 = Image.open(img2_name)
+#             img2 = img2.resize((700, 460))
+            img2 = t(img2)
+            
+            img2 = np.array(img2)
+            img2 = img2.astype('float32')
+            if img2.ndim==3:
+                if img2.shape[2]==4:
+                    img2=color.rgba2rgb(img2).astype(np.float32)
+            
+            img3_name = self.train_data[negative_index]
+            
+            img3 = Image.open(img3_name)
+#             img3 = img3.resize((700, 460))
+            img3 = t(img3)
+            
+            img3 = np.array(img3)
+            img3 = img3.astype('float32')
+            if img3.ndim==3:
+                if img3.shape[2]==4:
+                    img3=color.rgba2rgb(img3).astype(np.float32)
+            
+        else:
+            img1_name = self.test_data[self.test_triplets[index][0]]
+            label1 = self.test_labels[self.test_triplets[index][0]].item()
+            
+            img1 = Image.open(img1_name)
+#             img1 = img1.resize((700, 460))
+            
+            
+            img1 = np.array(img1)
+            img1 = img1.astype('float32')
+            if img1.ndim==3:
+                if img1.shape[2]==4:
+                    img1=color.rgba2rgb(img1).astype(np.float32)
+            
+            img2_name = self.test_data[self.test_triplets[index][1]]
+            
+            img2 = Image.open(img2_name)
+#             img2 = img2.resize((700, 460))
+           
+            
+            img2 = np.array(img2)
+            img2 = img2.astype('float32')
+            if img2.ndim==3:
+                if img2.shape[2]==4:
+                    img2=color.rgba2rgb(img2).astype(np.float32)
+            
+            img3_name = self.test_data[self.test_triplets[index][2]]
+            
+            img3 = Image.open(img3_name)
+#             img3 = img3.resize((700, 460))
             
             
             img3 = np.array(img3)

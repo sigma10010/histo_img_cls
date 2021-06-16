@@ -3,7 +3,7 @@ import numpy as np
 from save_load import save_model
 
 def fit(train_loader, val_loader, model, model_name, loss_fn, optimizer, scheduler, n_epochs, cuda, log_interval, metrics=[],
-        start_epoch=0):
+        start_epoch=0, do_test=True):
     """
     Loaders, model, loss function and metrics should work together for a given task,
     i.e. The model should be able to process data output of loaders,
@@ -29,14 +29,15 @@ def fit(train_loader, val_loader, model, model_name, loss_fn, optimizer, schedul
         message = 'Epoch: {}/{}. Train set: Average loss: {:.4f}'.format(epoch + 1, n_epochs, train_loss)
         for metric in metrics:
             message += '\t{}: {}'.format(metric.name(), metric.value())
+        
+        if do_test:
+            val_loss, metrics = test_epoch(val_loader, model, loss_fn, cuda, metrics)
+            val_loss /= len(val_loader)
 
-        val_loss, metrics = test_epoch(val_loader, model, loss_fn, cuda, metrics)
-        val_loss /= len(val_loader)
-
-        message += '\nEpoch: {}/{}. Validation set: Average loss: {:.4f}'.format(epoch + 1, n_epochs,
+            message += '\nEpoch: {}/{}. Validation set: Average loss: {:.4f}'.format(epoch + 1, n_epochs,
                                                                                  val_loss)
-        for metric in metrics:
-            message += '\t{}: {}'.format(metric.name(), metric.value())
+            for metric in metrics:
+                message += '\t{}: {}'.format(metric.name(), metric.value())
 
         print(message)
         
@@ -46,9 +47,9 @@ def fit(train_loader, val_loader, model, model_name, loss_fn, optimizer, schedul
                 save_model(model, model_name, epoch)
                 best_acc = metric.value()
                 
-#         # save model
-#         if (epoch+1)%10==0:
-#             save_model(model, model_name, epoch+1)
+        # save final model
+        if epoch==(n_epochs-1):
+            save_model(model, model_name, epoch+1)
 
 
 def train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, metrics):
